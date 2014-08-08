@@ -1,12 +1,29 @@
-#!/usr/bin/python 
+#!/usr/bin/env python 
+
+"""
+CopperEgg Agent Curator.
+
+Usage:
+  copperegg-agent -h | --help
+  copperegg-agent [--dry] --key <key> --num <num> --host <host>
+
+Options:
+  -h, --help            Show this help.
+  -k, --key <key>       The API key
+  -n, --num <num>       The number of backend processes
+  -H, --host <host>     The hostname of the server or any other uniq id.
+  --dry                 Dry run, do not change anything.
+
+
+Examples:
+
+  copperegg-agent -k fgji3tydvehehf -n 4 -H demo
+
+"""
 
 import requests
 import time
 import json
-
-HOST = "{{ inventory_hostname_short }}"
-API_KEY = "{{ copperegg_api_key }}"
-PROC_COUNT = {{ backend_proc_count }} 
 
 METRICS_GROUP = "web-server"
 
@@ -21,22 +38,57 @@ def get_metrics(url):
   # lower case all keys
   return dict((k.lower(), v) for k, v in r.json().iteritems())
 
-def post_metrics(url, id, metrics):
+def post_metrics(url, api_key, id, metrics, dry_run=False):
   payload = { "identifier": id, "timestamp": int(time.time()), "values": metrics }
   headers = { 'content-type': 'application/json' }
-
-  p = requests.post(url, auth=(API_KEY, 'U'), 
+  
+  if dry_run: 
+    print json.dumps(payload)
+  else:
+    p = requests.post(url, auth=(api_key, 'U'), 
                     data=json.dumps(payload), 
                     headers=headers)
-  p.raise_for_status()
+    p.raise_for_status()
 
-for i in range(PROC_COUNT):
-  port = PORT_BASE + i
-  id = "%s_%s" % (HOST, port)
+def main():
+  dry_run = False
 
-  try:
-    metrics = get_metrics(POLL_URL % ('127.0.0.1', port))
-    post_metrics(POST_URL, id, metrics)
-  except requests.exceptions.RequestException as e:
-    print e
-    continue  
+  from docopt import docopt
+
+  arguments = docopt(__doc__, version='CopperEgg Agent')
+ 
+  api_key = arguments.get('--key', None)
+  if not api_key:
+    print 'Invalid API key'
+    return 1
+
+  host = arguments.get('--host', None)
+  if not host:
+    print 'Invalid hostname'
+    return 1
+
+  proc_count = int(arguments.get('--num', None))
+  if not proc_count:
+    print 'Invalid number of backends'
+    return 1
+
+  if arguments.get('--dry'):
+        print 'DRY mode, no changes made.'
+        dry_run = True
+
+  for i in range(proc_count):
+    port = PORT_BASE + i
+    id = "%s_%s" % (host, port)
+
+    try:
+      metrics = get_metrics(POLL_URL % ('127.0.0.1', port))
+      if dry_run: print json.dumps(metrics)
+
+      post_metrics(POST_URL, api_key, id, metrics, dry_run)
+      
+    except requests.exceptions.RequestException as e:
+      print e
+      continue  
+
+if __name__ == '__main__':
+    main()
