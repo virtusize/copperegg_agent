@@ -1,7 +1,7 @@
 #!/usr/bin/env python 
 
 """
-CopperEgg Agent Curator.
+CopperEgg Agent.
 
 Usage:
   copperegg-agent -h | --help
