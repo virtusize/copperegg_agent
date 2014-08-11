@@ -73,8 +73,8 @@ def main():
     return 1
 
   if arguments.get('--dry'):
-        print 'DRY mode, no changes made.'
-        dry_run = True
+    print 'DRY mode, no changes made.'
+    dry_run = True
 
   for i in range(proc_count):
     port = PORT_BASE + i
