@@ -74,7 +74,7 @@ def get_metrics_connections(queue, s_time, id):
     while True:
         try:
             cmd = subprocess.Popen(
-                ['ss', '-n', '-a', '-4'], stdout=subprocess.PIPE)
+                ['/bin/ss', '-n', '-a', '-4'], stdout=subprocess.PIPE)
         except subprocess.CalledProcessError as e:
             print "Connections ", e.returncode
         else:

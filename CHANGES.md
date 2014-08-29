@@ -11,10 +11,13 @@ Use list notation, and following prefixes:
 
 ### Next
 
+### 0.1.2
+
+- Bugfix: fixed path to `ss` command
 
 ### 0.1.1
 
-- HotFix: copperegg-agent.py renamed to copperegg_agent.py
+- BugFix: copperegg-agent.py renamed to copperegg_agent.py
 
 ### 0.1.0
 
