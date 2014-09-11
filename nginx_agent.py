@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-
 """
-CopperEgg Agent for nginx.
+CopperEgg Agent.
 
 Usage:
   nginx_agent -h | --help
@@ -20,10 +19,12 @@ Options:
 
 Examples:
 
-  tail -F /var/log/nginx/backend.log | nginx_agent -k fgji3tydvehehf -n 4 -H webapp-01 -p production
+  nginx_agent -k fgji3tydvehehf -n 4 -H webapp-01 -p production
 
 """
+
 from collections import defaultdict
+
 import gevent.monkey
 gevent.monkey.patch_all
 
@@ -43,22 +44,30 @@ VERBOSE = False
 HTTP_VERBS = ['HEAD', 'PUT', 'GET', 'POST']
 
 
+def verbose(msg):
+    if VERBOSE:
+        print(msg)
+
+
 def get_metrics_nginx_backend(queue):
     skip_list = ['/health-check/status']
     count = 0
     for line in sys.stdin:
-        backend, request, status, response = line.rstrip().split('|', 3)
-        if status != '200':
-            if VERBOSE:
-                print "Skipped %s %s" % (status, request)
+        try:
+            backend, request, status, response = line.rstrip().split('|', 3)
+            if status != '200':
+                verbose("Skipped %s %s" % (status, request))
+                continue
+            host, port = backend.split(':', 1)
+            verb, url, http = request.split(' ', 2)
+        except (TypeError, ValueError):
+            verbose("Parser error %s" % line)
             continue
-        host, port = backend.split(':', 1)
-        verb, url, http = request.split(' ', 2)
         if url in skip_list:
-            if VERBOSE:
-                print "Skipped: %s" % url
+            verbose("Skipped: %s" % url)
             continue
         if verb not in HTTP_VERBS:
+            verbose("Unknown http verb %s" % request)
             continue
         metrics = defaultdict(dict)
         metrics['identifier'] = "backend_%s_%s" % (port, verb.lower())
@@ -66,25 +75,24 @@ def get_metrics_nginx_backend(queue):
         if VERBOSE:
             count += 1
             if count >= 1000:
-                print "%s queue size: %s" % (verb, queue[verb].qsize())
+                print("%s queue size: %s" % (verb, queue[verb].qsize()))
                 count = 0
         try:
             count += 1
             queue[verb].put_nowait(metrics)
         except gevent.queue.Full as e:
-            print "%s queue congestion. Size: %s. Discarding data." % (verb, queue[verb].qsize())
+            print("%s queue congestion. Size: %s. Discarding data." %
+                  (verb, queue[verb].qsize()))
         finally:
             gevent.sleep(0.1)
 
     for verb in HTTP_VERBS:
         queue[verb].put_nowait(None)  # put a poison pill
-        if VERBOSE:
-            print "Put poison pill for consumer"
+        verbose("Put poison pill for consumer")
 
 
 def median(list):
-#    if VERBOSE:
-#        print "list size %s" % len(list)
+#   verbose("list size %s" % len(list))
     sorts = sorted(list)
     length = len(sorts)
     if not length % 2:
@@ -103,20 +111,18 @@ def post_http(api_key, url, metrics):
     headers = {'content-type': 'application/json'}
 
     if DRY_RUN:
-        print "OK: %s" % (json.dumps(metrics))
+        print("OK: %s" % (json.dumps(metrics)))
     else:
+        verbose("URL: %s" % (url))
         try:
-            if VERBOSE:
-                print "URL: %s" % (url)
-                p = requests.post(url,
-                                  auth=(api_key, 'U'),
-                                  data=json.dumps(metrics),
-                                  headers=headers)
-                p.raise_for_status()
-                if VERBOSE:
-                    print "OK: %s" % (json.dumps(metrics))
+            p = requests.post(url,
+                              auth=(api_key, 'U'),
+                              data=json.dumps(metrics),
+                              headers=headers)
+            p.raise_for_status()
+            verbose("OK: %s" % (json.dumps(metrics)))
         except requests.exceptions.RequestException as e:
-            print "ERR: %s DATA: %s" % (e, json.dumps(metrics))
+            print("ERR: %s DATA: %s" % (e, json.dumps(metrics)))
 
 
 def post_metrics(queue, s_time, api_key, url):
@@ -149,8 +155,7 @@ def post_metrics(queue, s_time, api_key, url):
             post_http(api_key, url, metrics)
 
         if data is None:  # got a poison pill, no data, exit
-            if VERBOSE:
-                print "Got poison pill. Exit "
+            verbose("Got poison pill. Exit.")
             return
 
         gevent.sleep(s_time)
@@ -166,25 +171,25 @@ def main():
 
     api_key = arguments.get('--key', None)
     if not api_key:
-        print 'Invalid API key'
+        print('Invalid API key')
         return 1
 
     host = arguments.get('--host', None)
     if not host:
-        print 'Invalid hostname'
+        print('Invalid hostname')
         return 1
 
     prefix = arguments.get('--prefix', None)
     if not prefix:
-        print 'Invalid group prefix'
+        print('Invalid group prefix')
         return 1
 
     if arguments.get('--dry'):
-        print 'DRY mode, no changes made.'
+        print('DRY mode, no changes made.')
         DRY_RUN = True
 
     if arguments.get('--verbose'):
-        print 'VERBOSE mode.'
+        print('VERBOSE mode.')
         VERBOSE = True
 
     jobs = []
@@ -209,7 +214,6 @@ def main():
         gevent.joinall(jobs)
     except KeyboardInterrupt:
         gevent.killall(jobs)
-
 
 if __name__ == '__main__':
     gevent.signal(signal.SIGQUIT, gevent.kill)
