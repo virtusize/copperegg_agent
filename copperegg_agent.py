@@ -1,11 +1,10 @@
 #!/usr/bin/env python
-
 """
 CopperEgg Agent.
 
 Usage:
-  copperegg-agent -h | --help
-  copperegg-agent [--dry] [--verbose] --key <key> --num <num> --host <host> --prefix <pref>
+  copperegg_agent -h | --help
+  copperegg_agent [--dry] [--verbose] --key <key> --num <num> --host <host> --prefix <prefix>
 
 Options:
   -h, --help             Show this help.
@@ -19,7 +18,7 @@ Options:
 
 Examples:
 
-  copperegg-agent -k fgji3tydvehehf -n 4 -H webapp-01 -p production
+  copperegg_agent -k fgji3tydvehehf -n 4 -H webapp-01 -p production
 
 """
 from collections import defaultdict
