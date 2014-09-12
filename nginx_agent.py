@@ -74,8 +74,8 @@ def get_metrics_nginx_backend(queue):
         metrics['values']['response_time'] = response
         if VERBOSE:
             count += 1
-            if count >= 1000:
-                print("%s queue size: %s" % (verb, queue[verb].qsize()))
+            if count >= 100:
+                print("Producer %s queue size: %s" % (verb, queue[verb].qsize()))
                 count = 0
         try:
             count += 1
@@ -83,6 +83,7 @@ def get_metrics_nginx_backend(queue):
         except gevent.queue.Full as e:
             print("%s queue congestion. Size: %s. Discarding data." %
                   (verb, queue[verb].qsize()))
+            gevent.sleep(0.5)
         finally:
             gevent.sleep(0.1)
 
@@ -92,7 +93,7 @@ def get_metrics_nginx_backend(queue):
 
 
 def median(list):
-#   verbose("list size %s" % len(list))
+    verbose("List size %s" % len(list))
     sorts = sorted(list)
     length = len(sorts)
     if not length % 2:
@@ -138,6 +139,7 @@ def post_metrics(queue, s_time, api_key, url):
                 data = queue.get()
                 if data is not None:
                     buffer.append(float(data['values']['response_time']))
+            verbose("Consumer queue size %s" % queue.qsize())
             metrics['timestamp'] = int(time.time())
             metrics['values']['response_time_median'] = median(buffer)
             metrics['values']['response_time_mean'] = mean(buffer)
