@@ -82,7 +82,7 @@ def get_metrics_connections(queue, s_time, id):
         except subprocess.CalledProcessError as e:
             print "Connections ", e.returncode
 
-        if cmd is not None:
+        if cmd:
             metrics = defaultdict(lambda: defaultdict(int))
             metrics['identifier'] = id
             metrics['timestamp'] = int(time.time())
