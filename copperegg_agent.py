@@ -84,7 +84,7 @@ def get_metrics_connections(queue, s_time, id):
             print "Connections ", e.returncode
 
         if cmd is not None:
-            metrics = defaultdict(dict)
+            metrics = defaultdict(lambda: defaultdict(int))
             metrics['identifier'] = id
             metrics['timestamp'] = int(time.time())
             for line in cmd.stdout:
