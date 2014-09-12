@@ -30,6 +30,7 @@ gevent.monkey.patch_all
 import gevent
 from gevent.queue import Queue
 from gevent import subprocess
+from gevent import Timeout
 
 import signal
 import time
@@ -44,6 +45,8 @@ NGINX_URL = 'http://127.0.0.1/nginx_status'
 
 DRY_RUN = False
 VERBOSE = False
+CMD_TIMEOUT = 5  # seconds
+
 
 def get_metrics_nginx(queue, s_time, id, url):
     while True:
@@ -72,30 +75,31 @@ def get_metrics_nginx(queue, s_time, id, url):
 
 def get_metrics_connections(queue, s_time, id):
     while True:
+        cmd = None
         try:
-            cmd = subprocess.Popen(
-                ['/bin/ss', '-n', '-a', '-4'], stdout=subprocess.PIPE)
+            with Timeout(CMD_TIMEOUT, None):
+                cmd = subprocess.Popen(
+                    ['/bin/ss', '-n', '-a', '-4'], stdout=subprocess.PIPE)
         except subprocess.CalledProcessError as e:
             print "Connections ", e.returncode
-        else:
-            data = defaultdict(int)
-            for line in cmd.stdout:
-                if line.startswith('ESTAB'):
-                    data['established'] += 1
-                elif line.startswith('TIME-WAIT'):
-                    data['time_wait'] += 1
-                elif line.startswith('CLOSE-WAIT'):
-                    data['close_wait'] += 1
-                elif line.startswith('LISTEN'):
-                    data['listen'] += 1
 
-            metrics = {}
+        if cmd is not None:
+            metrics = defaultdict(dict)
             metrics['identifier'] = id
             metrics['timestamp'] = int(time.time())
-            metrics['values'] = data
+            for line in cmd.stdout:
+                if line.startswith('ESTAB'):
+                    metrics['values']['established'] += 1
+                elif line.startswith('TIME-WAIT'):
+                    metrics['values']['time_wait'] += 1
+                elif line.startswith('CLOSE-WAIT'):
+                    metrics['values']['close_wait'] += 1
+                elif line.startswith('LISTEN'):
+                    metrics['values']['listen'] += 1
+
             queue.put_nowait(metrics)
-        finally:
-            gevent.sleep(s_time)
+
+        gevent.sleep(s_time)
 
 
 def get_metrics_cherrypy(queue, s_time, id, url):
@@ -123,7 +127,7 @@ def post_metrics(queue, api_key, url):
         metrics = {}
         metrics = queue.get()
         if DRY_RUN:
-             print "OK: %s" % (json.dumps(metrics))
+            print "OK: %s" % (json.dumps(metrics))
         else:
             try:
                 if VERBOSE:
@@ -188,7 +192,7 @@ def main():
         jobs.append(gevent.spawn(get_metrics_cherrypy,
                                  q_cherrypy,
                                  15,
-                                 '%s_%s'  % ('cherrypy',  port),
+                                 '%s_%s' % ('cherrypy',  port),
                                  POLL_URL % ('127.0.0.1', port)))
 
     q_nginx = Queue()
