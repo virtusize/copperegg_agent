@@ -71,7 +71,7 @@ def get_metrics_nginx_backend(queue):
 
         # 127.0.0.1:11004, 127.0.0.1:11003|GET /api/vs-widget/v2
         #       HTTP/1.1|200|1.492, 0.020
-        for back, rtime in zip(backend.split(', '), response.split(' ,')):
+        for back, rtime in zip(backend.split(', '), response.split(', ')):
             host, port = back.split(':', 1)
             metrics = defaultdict(lambda: defaultdict(int))
             metrics['identifier'] = "backend_{}_{}".format(port, verb.lower())
