@@ -11,6 +11,8 @@ Use list notation, and following prefixes:
 
 ### Next
 
+- Feature: Added nginx_agent it use nginx's log file to extract upstream response time. (ik)
+
 ### 0.1.2
 
 - Bugfix: fixed path to `ss` command
