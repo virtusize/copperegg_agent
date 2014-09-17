@@ -11,6 +11,7 @@ Use list notation, and following prefixes:
 
 ### Next
 
+- Feature: Added nginx_agent it use nginx's log file to extract upstream response time. (ik)
 - Feature: Added 5 seconds timeout for external `ss` command execution. (ik)
 
 ### 0.1.2
