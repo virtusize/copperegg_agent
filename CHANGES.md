@@ -8,18 +8,23 @@ Use list notation, and following prefixes:
 - Refactor - code refactoring, keeping same functionality
 - Bugfix - when fixing any major bug
 
-
 ### Next
+
+
+### 0.2.0
+
+- Feature: Added nginx_agent it use nginx's log file to extract upstream response time. (ik)
+- Feature: Added 5 seconds timeout for external `ss` command execution. (ik)
 
 ### 0.1.2
 
-- Bugfix: fixed path to `ss` command
+- Bugfix: fixed path to `ss` command.
 
 ### 0.1.1
 
-- BugFix: copperegg-agent.py renamed to copperegg_agent.py
+- BugFix: copperegg-agent.py renamed to copperegg_agent.py.
 
 ### 0.1.0
 
-- Production ready version
+- Production ready version.
 
