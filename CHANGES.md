@@ -8,8 +8,10 @@ Use list notation, and following prefixes:
 - Refactor - code refactoring, keeping same functionality
 - Bugfix - when fixing any major bug
 
-
 ### Next
+
+
+### 0.2.0
 
 - Feature: Added nginx_agent it use nginx's log file to extract upstream response time. (ik)
 - Feature: Added 5 seconds timeout for external `ss` command execution. (ik)
